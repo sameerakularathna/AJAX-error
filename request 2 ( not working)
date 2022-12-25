@@ -1,0 +1,85 @@
+@extends('layouts.app')
+
+@section('content')
+<br>
+<div class="container">
+@if($errors->any())
+    <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+            <li>{{ $error}}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                   <center><b> {{ __('Search payment') }}</b></center>
+                       <div class="input-group mb-3">
+                            <input type="text" name="search" id="search" class="form-control" placeholder="{{ __('Search') }}" />
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                </div>
+                                <br><span id="errorBan"></span>
+                        </div>
+                </div>
+                <div class="card-body">
+
+                    
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section('script')
+<script type="text/javascript" >
+        $(document).ready(function($)
+        {  //alert("running");
+            $('#search').on('input', function (evt) {
+                var ban =$(this).val(); 
+                //alert(ban);
+
+                $.ajax({    //create an ajax request to display.php
+                type: "GET",
+                url: "getInfo",   
+                dataType: "html",   //expect html to be returned     
+                data:{SearchKey:ban},           
+                success: function(response)
+                {      
+                    res = response;
+                    alert(res);
+                    
+                }
+
+                });
+
+
+
+            });
+
+        });
+    </script>
+@endsection
+
+
+//web.php
+    Route::get('/getInfo}', [App\Http\Controllers\PaymentsController::class, 'getInfo'])->name('getInfo');
+    
+ //controller
+ public function getInfo(Request $request)
+    {
+        //dd($request);
+        $SearchKey = $request->get('SearchKey');
+        $data = Payments::where('admitionNumber', $SearchKey )->get()->all();
+        $b= $data;
+        if($b == null) { return $avb = "null"; } else{ return $b ; }
+
+    }
+ 
+

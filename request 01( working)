@@ -1,0 +1,147 @@
+@extends('layouts.app')
+
+@section('content')
+<div class="container">
+@if($errors->any())
+    <div class="alert alert-danger">
+        <ul>
+            @foreach ($errors->all() as $error)
+            <li>{{ $error}}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                {{-- nav --}}
+                <nav class="navbar navbar-expand-lg bg-light">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item"><a class="btn btn-default" href="{{ route('library')}}">Go Back</a></li>
+                        @can('DeleteBook')
+                            <li class="nav-item"><a class="nav-link" href="#">Delete Book</a></li>
+                        @endcan
+                        @can('BookHandling')
+                            <li class="nav-item"><a class="nav-link" href="{{ route('AddBook')}}">Add Book</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('issueBookPg')}}">Issue Book</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('returnBookpg')}}">Recive Book</a></li>
+                        @endcan
+                    </ul>
+                </nav>
+                {{-- nav --}}
+                <center><b> {{ __('Return Book') }}</div></b></center>
+                <div class="card-body">
+                    <form action="{{ route('returnBook')}}" method="POST">
+                    @csrf  
+                    @method('POST')
+                        <div class="form-group">
+                            <label for="">Accession Number</label>
+                            <input placeholder="Book number" id="BAN" name="BAN" type="number"  class="form-control" value="{{old('BAN')}}" required  >
+                            <br><span id="errorBan"></span>
+                        </div>
+                        <div class="form-group">
+                            <label for="">Borrower</label>
+                            <input readonly placeholder="student index number"  type="number" id="Borrower" name="Borrower"  class="form-control" id="" value="{{old('Borrower')}}" required>
+                        </div>
+                        <div class="form-group">
+                                    <label for="">Returned Date</label>
+                                    <input id="date" type="date" name="ReternDate" class="form-control" value="<?php echo date('Y-m-d'); ?>" />
+                                    <label for="">fine</label>
+                                    <input readonly id="fine"  type="text" name="fine" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="">Remark</label>
+                            <input placeholder="Remark"  type="text" id="Remark" name="Remark"  class="form-control" id="" value="{{old('Borrower')}}" >
+                        </div>
+                        <br>
+                        <center><button id="submit" disabled type="submit" class="btn btn-primary">{{ __('Submit') }}</button></center>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
+@section('script')
+    <script type="text/javascript" >
+        $(document).ready(function($)
+        {  //alert("running");
+            $('#BAN').on('input', function (evt) {
+                var ban =$(this).val(); //alert(ban);
+
+                $.ajax({    //create an ajax request to display.php
+                type: "GET",
+                url: "chkBANuser",             
+                dataType: "html",   //expect html to be returned     
+                data:{SearchKey:ban},           
+                success: function(response)
+                {      
+                    res = response;
+                    //alert(res);
+                    if(res == "null" ){
+                        $("#errorBan").html('Book is available in library according to records').removeClass().addClass('text-danger');
+                        $("#submit").attr("disabled", true);
+                    }   else
+                    {
+                        $("#errorBan").html('Book is Borrowed by'+' '+ res + ' '+'according to records' ).removeClass().addClass('text-success');
+                        $("#Borrower").val(res); 
+                        $("#submit").removeAttr('disabled');
+                    } 
+                }
+
+                });
+
+
+
+            });
+
+        });
+    </script>
+    <script type="text/javascript" >
+        $(document).ready(function($)
+            {  //alert("running");
+                $('#BAN').on('input', function (evt) {
+                    var ban =$(this).val(); //alert(ban);
+                    
+                //fine
+                $.ajax({    //create an ajax request to display.php
+                    type: "GET",
+                    url: "chkBANduedate",             
+                    dataType: "html",   //expect html to be returned     
+                    data:{SearchKey:ban},           
+                    success: function(response)
+                    {      
+                        //alert(response);
+                        var today = $('#date').val(); //alert(today);
+                        var start = new Date(today),
+                        end   = new Date(response),
+                        diff  = new Date(start-end ),
+                        days  = diff/1000/60/60/24;
+                        //days; //=> 8.525845775462964
+                        fine = days * 2 ;
+                        //alert(fine);
+                        if(days < 0 ){ $("#fine").val(0); }else{$("#fine").val(fine);} 
+                    }
+                    });
+                });
+            });
+    </script>
+@endsection
+
+
+
+// web.php
+Route::get('/chkBANuser', [App\Http\Controllers\BarController::class, 'chkBANuser'])->name('chkBANuser');
+
+//controller
+public function chkBANuser (Request $request,bar $bar)
+    {
+        $BAN= $request->get('SearchKey');
+        $data = bar::where('AccessionNumber', $BAN )->get()->first();
+        $b= $data->CurrentBorrower;
+        if($b == null) { return $avb = "null"; } else{ return $b ; }
+        //return $avb;
+    }
+
